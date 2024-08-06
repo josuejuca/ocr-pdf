@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados da Extração</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Resultados da Extração</h1>
+        <div class="mb-3">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Voltar</a>
+            <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-success" onclick="startDownload()">Baixar Planilha</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nome do Arquivo</th>
+                        <th>Tipo</th>
+                        <th>Status da Certidão</th>
+                        <th>Nome da Pessoa</th>
+                        <th>CPF da Pessoa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for info in extracted_info %}
+                        <tr>
+                            <td>{{ info.filename }}</td>
+                            <td>{{ info.certidao }}</td>
+                            <td>{{ info.status }}</td>
+                            <td>{{ info.nome }}</td>
+                            <td>{{ info.cpf }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function startDownload() {
+            setTimeout(function(){
+                window.location.href = "{{ url_for('download_file', filename=filename) }}";
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
