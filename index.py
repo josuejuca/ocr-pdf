@@ -52,12 +52,24 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 def extract_important_info(text):
+    # Civel, criminal, eleitoral 
     if "CERTIDÃO JUDICIAL" in text:
         return extract_judicial_cert_info(text)
+    # SEFAZ
     elif "CERTIDÃO NEGATIVA DE DÉBITOS" in text or "CERTIDÃO POSITIVA DE DÉBITOS COM EFEITO DE NEGATIVA" in text:
         return extract_sefaz_cert_info(text)
+    # Falencia 
+    elif "AÇÕES DE FALÊNCIAS E RECUPERAÇÕES JUDICIAIS" in text or "AÇÕES DE FALÊNCIAS E RECUPERAÇÕES JUDICIAIS" in text:
+        return extract_falencia_cert_info(text)
+    # Especial
+    elif "ESPECIAL - AÇÕES CÍVEIS E CRIMINAIS" in text or "ESPECIAL - AÇÕES CÍVEIS E CRIMINAIS" in text:
+        return extract_especial_cert_info(text)
+    # Receita 
     elif "CERTIDÃO NEGATIVA DE DÉBITOS RELATIVOS AOS TRIBUTOS FEDERAIS" in text or "CERTIDÃO POSITIVA COM EFEITOS DE NEGATIVA DE DÉBITOS RELATIVOS AOS TRIBUTOS" in text:
         return extract_receita_cert_info(text)
+    # trabalhista 
+    elif "CERTIDÃO DE AÇÕES TRABALHISTAS" in text or "CERTIDÃO POSITIVA DE DÉBITOS TRABALHISTAS" in text:
+        return extract_trabalhista_cert_info(text)
     else:
         return {
             'certidao': 'Tipo de certidão não reconhecido',
@@ -156,8 +168,6 @@ def extract_receita_cert_info(text):
         info['cpf'] = 'Não encontrado'
     
     # Descrição de pendência
-    #info['descricao'] = 'Não aplicável'
-    # Descrição de pendência
     descricao_start = text.find("é certificado que:")
     if descricao_start != -1:
         descricao_start += len("é certificado que:")
@@ -216,10 +226,10 @@ def extract_sefaz_cert_info(text):
         info['cpf'] = 'Não encontrado'
     
     # Descrição de pendência
-    descricao_start = text.find("CERTIFICAMOS QUE _____________________________")
+    descricao_start = text.find("é certificado que:")
     if descricao_start != -1:
-        descricao_start += len("CERTIFICAMOS QUE _____________________________")
-        descricao_end = text.find("Pelos débitos acima responde solidariamente o adquirente", descricao_start)
+        descricao_start += len("é certificado que:")
+        descricao_end = text.find("Conforme disposto nos arts", descricao_start)
         if descricao_end != -1:
             info['descricao'] = text[descricao_start:descricao_end].strip()
         else:
@@ -229,18 +239,156 @@ def extract_sefaz_cert_info(text):
     
     return info
 
+def extract_trabalhista_cert_info(text):
+    info = {}
+
+    if "CERTIDÃO DE AÇÕES TRABALHISTAS EM TRAMITAÇÃO" in text:
+        info['certidao'] = "TRABALHISTA"
+    elif "CERTIDÃO POSITIVA DE DÉBITOS TRABALHISTAS" in text:
+        info['certidao'] = "TRABALHISTA"
+    else:
+        info['certidao'] = 'Não encontrado'
+    
+    # Status da certidão
+    if "NÃO CONSTA" in text:
+        info['status'] = "NÃO CONSTAM AÇÔES TRABALHISTA"
+    elif "constam débitos" in text:
+        info['status'] = "HÁ DÉBITOS"
+    else:
+        info['status'] = 'Não encontrado'
+    
+    # Nome da pessoa
+    nome_start = text.find("NOME:")
+    if nome_start != -1:
+        nome_start += len("NOME:")
+        nome_end = text.find("\n", nome_start)
+        if nome_end != -1:
+            info['nome'] = text[nome_start:nome_end].strip().upper()
+        else:
+            info['nome'] = 'Não encontrado'
+    else:
+        info['nome'] = 'Não encontrado'
+    
+    # CPF da pessoa
+    cpf_pattern = r"CPF/CNPJ:\s*(\d{3}\.\d{3}\.\d{3}-\d{2})"
+    match = re.search(cpf_pattern, text)
+    if match:
+        info['cpf'] = match.group(1)
+    else:
+        info['cpf'] = 'Não encontrado'
+    
+    # Descrição de pendência
+    info['descricao'] = 'Não aplicável'
+    
+    return info
+
+def extract_falencia_cert_info(text):
+    info = {}
+
+    if "AÇÕES DE FALÊNCIAS E RECUPERAÇÕES JUDICIAIS" in text:
+        info['certidao'] = "FALENCIA"
+    elif "AÇÕES DE FALÊNCIAS E RECUPERAÇÕES JUDICIAIS" in text:
+        info['certidao'] = "FALENCIA"
+    else:
+        info['certidao'] = 'Não encontrado'
+    
+    # Status da certidão
+    if " NADA CONSTA" in text:
+        info['status'] = "NADA CONSTA"
+    elif "constam débitos" in text:
+        info['status'] = "HÁ DÉBITOS"
+    else:
+        info['status'] = 'Não encontrado'
+    
+    # Nome da pessoa
+    nome_start = text.find("de:\n")
+    if nome_start != -1:
+        nome_start += len("de:\n")
+        nome_end = text.find("\n", nome_start)
+        if nome_end != -1:
+            info['nome'] = text[nome_start:nome_end].strip().upper()
+        else:
+            info['nome'] = 'Não encontrado'
+    else:
+        info['nome'] = 'Não encontrado'
+    
+    # CPF da pessoa
+    cpf_pattern = r"\s*(\d{3}\.\d{3}\.\d{3}-\d{2})"
+    match = re.search(cpf_pattern, text)
+    if match:
+        info['cpf'] = match.group(1)
+    else:
+        info['cpf'] = 'Não encontrado'
+    
+    # Descrição de pendência
+    info['descricao'] = 'Não aplicável'
+    
+    return info
+
+
+
+def extract_especial_cert_info(text):
+    info = {}
+
+    if "ESPECIAL - AÇÕES CÍVEIS E CRIMINAIS" in text:
+        info['certidao'] = "ESPECIAL"
+    elif "ESPECIAL - AÇÕES CÍVEIS E CRIMINAIS" in text:
+        info['certidao'] = "ESPECIAL"
+    else:
+        info['certidao'] = 'Não encontrado'
+    
+    # Status da certidão
+    if " NADA CONSTA" in text:
+        info['status'] = "NADA CONSTA"
+    elif "constam débitos" in text:
+        info['status'] = "HÁ DÉBITOS"
+    else:
+        info['status'] = 'Não encontrado'
+    
+    # Nome da pessoa
+    nome_start = text.find("de:\n")
+    if nome_start != -1:
+        nome_start += len("de:\n")
+        nome_end = text.find("\n", nome_start)
+        if nome_end != -1:
+            info['nome'] = text[nome_start:nome_end].strip().upper()
+        else:
+            info['nome'] = 'Não encontrado'
+    else:
+        info['nome'] = 'Não encontrado'
+    
+    # CPF da pessoa
+    cpf_pattern = r"\s*(\d{3}\.\d{3}\.\d{3}-\d{2})"
+    match = re.search(cpf_pattern, text)
+    if match:
+        info['cpf'] = match.group(1)
+    else:
+        info['cpf'] = 'Não encontrado'
+    
+    # Descrição de pendência
+    info['descricao'] = 'Não aplicável'
+    
+    return info
+
 
 def map_certidao_name(certidao_nome):
-    if "PARA FINS ELEITORAIS" in certidao_nome:
-        return "ELEITORAL"
-    elif "CÍVEL" in certidao_nome:
-        return "CÍVEL"
-    elif "CRIMINAL" in certidao_nome:
-        return "CRIMINAL"
+    if "CÍVEL" in certidao_nome.upper():
+        return "CERTIDÃO CÍVEL"
+    elif "CRIMINAL" in certidao_nome.upper():
+        return "CERTIDÃO CRIMINAL"
+    elif "ELEITORAIS" in certidao_nome.upper():
+        return "CERTIDÃO ELEITORAL"
+    elif "FALÊNCIA" in certidao_nome.upper():
+        return "CERTIDÃO FALÊNCIA"
+    elif "TRABALHISTA" in certidao_nome.upper():
+        return "CERTIDÃO TRABALHISTA"
+    elif "SEFAZ" in certidao_nome.upper():
+        return "CERTIDÃO SEFAZ"
     else:
-        return certidao_nome
+        return certidao_nome.strip().upper()
+
 
 if __name__ == '__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=80 )
